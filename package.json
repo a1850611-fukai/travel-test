@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://a1850611-fukai.github.io/travel-test/",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
