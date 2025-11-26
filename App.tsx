@@ -5,13 +5,15 @@ import TimelineCard from './components/TimelineCard';
 import Modal from './components/Modal';
 import { ThaiRoof, ElephantIcon } from './components/ThaiDecoration';
 import { getWeather } from './services/weatherService';
-import { CloudSun, Navigation } from 'lucide-react';
+import { CloudSun, Download } from 'lucide-react';
 
 export default function App() {
   const [activeDayIndex, setActiveDayIndex] = useState(0);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [weather, setWeather] = useState<{temp: string, condition: string} | null>(null);
+  const [weather, setWeather] = useState<{temp: string, condition: string, sourceUrl?: string} | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,11 +27,32 @@ export default function App() {
     // Fetch initial weather
     const fetchWeather = async () => {
         const data = await getWeather();
-        setWeather({ temp: data.temp, condition: data.condition });
+        setWeather({ temp: data.temp, condition: data.condition, sourceUrl: data.sourceUrl });
     };
     fetchWeather();
+    
+    // PWA Install Prompt Listener
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    }
+  };
 
   const handleOpenDetails = (activity: Activity) => {
     setSelectedActivity(activity);
@@ -50,11 +73,31 @@ export default function App() {
             <div>
                 <p className="text-amber-100 uppercase tracking-widest text-xs font-semibold mb-1">Thailand Trip</p>
                 <h1 className="text-3xl font-bold serif-font text-shadow-sm">Bangkok</h1>
-                <div className="flex items-center mt-2 text-amber-50 text-sm bg-white/10 w-fit px-3 py-1 rounded-full backdrop-blur-sm">
-                    <CloudSun className="w-4 h-4 mr-2" />
-                    <span>
-                        {weather ? `${weather.temp === "Current" ? "" : weather.temp} ${weather.condition}` : "Loading..."}
-                    </span>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <div className="flex items-center text-amber-50 text-sm bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
+                      <CloudSun className="w-4 h-4 mr-2" />
+                      <span>
+                          {weather ? (
+                              weather.sourceUrl ? (
+                                  <a href={weather.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-white transition-colors" title="Source">
+                                      {`${weather.temp === "Current" ? "" : weather.temp} ${weather.condition}`}
+                                  </a>
+                              ) : (
+                                  `${weather.temp === "Current" ? "" : weather.temp} ${weather.condition}`
+                              )
+                          ) : "Loading..."}
+                      </span>
+                  </div>
+                  {/* PWA Install Button (Only visible if installable) */}
+                  {deferredPrompt && (
+                    <button 
+                      onClick={handleInstallClick}
+                      className="flex items-center text-amber-600 text-xs bg-white px-3 py-1 rounded-full shadow-md font-bold hover:bg-amber-50 active:scale-95 transition-all"
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      Install App
+                    </button>
+                  )}
                 </div>
             </div>
             <div className="text-right">
@@ -117,9 +160,6 @@ export default function App() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
       />
-      
-      {/* PWA Install Prompt Placeholder (optional functionality) */}
-      {/* <div className="hidden">Install App</div> */}
     </div>
   );
 }

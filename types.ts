@@ -21,4 +21,5 @@ export interface WeatherData {
   temp: string;
   condition: string;
   location: string;
+  sourceUrl?: string;
 }
