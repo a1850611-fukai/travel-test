@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Thai Journey: Bangkok & Beyond",
+  "description": "A beautiful, Thai-themed travel itinerary PWA featuring a 6-day timeline, interactive maps, and real-time weather integration via Gemini.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
